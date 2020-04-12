@@ -3,13 +3,16 @@ import time
 import re
 from slackclient import SlackClient
 from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, request
 
 
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
 finn_bot_id = None
-db = SQLAlchemy(finn_bot)
 
-from models import 
+app = Flask(__name__)
+db = SQLAlchemy(app)
+
+from models import Team
 RTM_READ_DELAY = 1
 MENTION_REGEX = "^<@(|[WU].+?)>(.*)"
 

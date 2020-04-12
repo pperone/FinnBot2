@@ -1,10 +1,11 @@
 from finn_bot import db
+from sqlalchemy_utils import ScalarListType
 
 class Team(db.Model):
   __tablename__ = 'teams'
 
   channel = db.Column(db.String(), primary_key=True)
-  users = db.Column(db.Array(String))
+  users = db.Column(db.ARRAY(db.String))
   current = db.Column(db.Integer())
 
   def __init__(self, channel, users, current):
