@@ -1,5 +1,4 @@
 from finn_bot import db
-from sqlalchemy_utils import ScalarListType
 
 class Team(db.Model):
   __tablename__ = 'teams'
