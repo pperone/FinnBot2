@@ -10,6 +10,8 @@ slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
 finn_bot_id = None
 
 app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
 from models import Team
