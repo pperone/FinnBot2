@@ -2,11 +2,14 @@ import os
 import time
 import re
 from slackclient import SlackClient
+from flask_sqlalchemy import SQLAlchemy
 
 
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
 finn_bot_id = None
+db = SQLAlchemy(finn_bot)
 
+from models import 
 RTM_READ_DELAY = 1
 MENTION_REGEX = "^<@(|[WU].+?)>(.*)"
 
@@ -57,6 +60,15 @@ def handle_command(command, channel, counter):
             response = "{} added to bug squashing squad.".format(mention)
         else:
             response = "Not a valid addition. Try tagging someone."
+
+    if command.startswith('remove'):
+        mention = command.split()[1]
+
+        if mention in takers:
+            takers.remove(mention)
+            response = "{} removed from bug squashing squad.".format(mention)
+        else:
+            response = "{} is not part of the bug squashing squad.".format(mention)
 
     slack_client.api_call(
         "chat.postMessage",
