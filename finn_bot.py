@@ -1,34 +1,81 @@
 import os
 import time
 import re
+
 from slackclient import SlackClient
-from flask_sqlalchemy import SQLAlchemy
-from flask import Flask, request
+
+from sqlalchemy import create_engine  
+from sqlalchemy import Column, String, Integer, ARRAY
+from sqlalchemy.ext.declarative import declarative_base  
+from sqlalchemy.orm import sessionmaker
 
 
+# Database creation and setup
+engine = create_engine(os.environ['DATABASE_URL'])
+base = declarative_base()
+
+class Team(base):  
+    __tablename__ = 'teams'
+
+    channel = Column(String, primary_key=True)
+    users = Column(String)
+    current = Column(Integer)
+
+Session = sessionmaker(engine)  
+session = Session()
+
+base.metadata.create_all(engine)
+
+
+# Slack setup
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
 finn_bot_id = None
 
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ['DATABASE_URL']
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
 
-from models import Team
+# Constants
 RTM_READ_DELAY = 1
 MENTION_REGEX = "^<@(|[WU].+?)>(.*)"
 
 
-def parse_bot_commands(slack_events, counter):
+def create_team(channel):
+    team = Team(channel=channel, users='', current=0)
+    session.add(Team(channel=channel, users='', current=0))
+    session.commit()
+    return team
+
+
+def get_team(channel):
+    team = session.query(Team).filter_by(channel=channel).first()
+    return team
+
+
+def evaluate_team(channel):
+    team = get_team(channel)
+
+    if team:
+        channel = team.channel
+        counter = team.current
+        users = team.users
+    else:
+        team = create_team(channel)
+        channel = team.channel
+        counter = team.current
+        users = team.users
+    
+    return team, channel, counter, users
+
+
+def parse_bot_commands(slack_events):
     for event in slack_events:
         if event["type"] == "message" and not "subtype" in event:
             user_id, message = parse_direct_mention(event["text"])
+            team, channel, counter, users = evaluate_team(event["channel"])
 
             if "attachments" in event:
                 if event["attachments"][0]["author_subname"] == 'BugBot':
-                    handle_command('assign', event["channel"], counter)
+                    handle_command('assign', team)
             elif user_id == finn_bot_id:
-                return message, event["channel"]
+                handle_command(message, team)
 
     return None, None
 
@@ -39,21 +86,24 @@ def parse_direct_mention(message_text):
     return (matches.group(1), matches.group(2).strip()) if matches else (None, None)
 
 
-def handle_command(command, channel, counter):
+def handle_command(command, team):
     response = None
+    users = team.users.split()
 
     if command.startswith('assign'):
-        if len(takers) > 0:
-            response = takers[counter]
+        if len(users) > team.current + 1:
+            team.current += 1
+        else:
+            team.current = 0
+
+        if len(users) > 0:
+            response = users[team.current]
         else:
             response = "There is no one assigned for taking tasks yet. Use the *add* command followed by a user mention."
-        
-        if len(takers) > counter + 1:
-            counter += 1
 
     if command.startswith('list'):
-        if len(takers) > 0:
-            response = takers
+        if len(users) > 0:
+            response = users
         else:
             response = "There is no one assigned for taking tasks yet. Use the *add* command followed by a user mention."
 
@@ -61,7 +111,7 @@ def handle_command(command, channel, counter):
         mention = command.split()[1]
 
         if mention:
-            takers.append(mention)
+            team.users += " " + mention
             response = "{} added to bug squashing squad.".format(mention)
         else:
             response = "Not a valid addition. Try tagging someone."
@@ -69,31 +119,34 @@ def handle_command(command, channel, counter):
     if command.startswith('remove'):
         mention = command.split()[1]
 
-        if mention in takers:
-            takers.remove(mention)
+        if mention in users:
+            remove = " " + mention
+            updated = team.users.replace(remove, '')
+            team.users = updated
             response = "{} removed from bug squashing squad.".format(mention)
         else:
             response = "{} is not part of the bug squashing squad.".format(mention)
 
+        if team.current >= len(users):
+            team.current -= 1
+
     slack_client.api_call(
         "chat.postMessage",
-        channel = channel,
+        channel = team.channel,
         text = response,
         as_user = True
     )
+
+    session.commit()
 
 
 if __name__ == "__main__":
     if slack_client.rtm_connect(with_team_state=False):
         print("Finn Bot connected and running!")
         finn_bot_id = slack_client.api_call("auth.test")["user_id"]
-        takers = []
-        counter = 0
 
         while True:
-            command, channel = parse_bot_commands(slack_client.rtm_read(), counter)
-            if command:
-                handle_command(command, channel, counter)
+            parse_bot_commands(slack_client.rtm_read())
             time.sleep(RTM_READ_DELAY)
     else:
         print("Connection failed. Exception traceback printed above.")
