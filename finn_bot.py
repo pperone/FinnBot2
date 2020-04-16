@@ -121,7 +121,7 @@ def handle_command(command, team):
 
     
     if command.startswith('decrease'):
-        if team.current >= 0:
+        if team.current > 0:
             team.current -= 1
             response = "Position in queue moved backward by one person"
         elif len(users) > 1:
