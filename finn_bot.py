@@ -94,12 +94,12 @@ def handle_command(command, team):
     users = team.users.split()
 
     if command.startswith('assign'):
-        if len(users) <= team.current + 1:
-            team.current = 0
-
         if len(users) > 0:
             response = users[team.current]
-            team.current += 1
+            if team.current == len(users) - 1:
+                team.current = 0
+            else:
+                team.current += 1
         else:
             response = "There is no one assigned for taking tasks yet. Use the *add* command followed by a user mention."
 
