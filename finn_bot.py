@@ -49,6 +49,7 @@ def get_team(channel):
     return team
 
 
+# Create team if it doesn't exist, retrieve it if it does
 def evaluate_team(channel):
     team = get_team(channel)
 
@@ -80,12 +81,14 @@ def parse_bot_commands(slack_events):
     return None, None
 
 
+# Extract direct mention to bot
 def parse_direct_mention(message_text):
     matches = re.search(MENTION_REGEX, message_text)
 
     return (matches.group(1), matches.group(2).strip()) if matches else (None, None)
 
 
+# All the possible commands from user input
 def handle_command(command, team):
     response = None
     users = team.users.split()
@@ -127,8 +130,10 @@ def handle_command(command, team):
         else:
             response = "Queue position can\'t be moved"
 
+
     if command.startswith('current'):
         response = "Queue position is currently *{}*.".format(team.current)
+
 
     if command.startswith('add'):
         mention = command.split()[1]
