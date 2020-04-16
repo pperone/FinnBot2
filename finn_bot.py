@@ -91,13 +91,12 @@ def handle_command(command, team):
     users = team.users.split()
 
     if command.startswith('assign'):
-        if len(users) > team.current + 1:
-            team.current += 1
-        else:
+        if len(users) <= team.current + 1:
             team.current = 0
 
         if len(users) > 0:
             response = users[team.current]
+            team.current += 1
         else:
             response = "There is no one assigned for taking tasks yet. Use the *add* command followed by a user mention."
 
@@ -106,6 +105,28 @@ def handle_command(command, team):
             response = users
         else:
             response = "There is no one assigned for taking tasks yet. Use the *add* command followed by a user mention."
+
+    if command.startswith('increase'):
+        if len(users) > team.current + 1:
+            team.current += 1
+            response = "Position in queue moved forward by one person"
+        elif len(users) > 1:
+            team.current = 0
+            response = "Position in queue moved forward by one person"
+        else:
+            response = "Queue position can\'t be moved"
+
+    
+    if command.startswith('decrease'):
+        if team.current >= 0:
+            team.current -= 1
+            response = "Position in queue moved backward by one person"
+        elif len(users) > 1:
+            team.current = len(users) - 1
+            response = "Position in queue moved backward by one person"
+        else:
+            response = "Queue position can\'t be moved"
+
 
     if command.startswith('add'):
         mention = command.split()[1]
