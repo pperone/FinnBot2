@@ -118,7 +118,6 @@ def handle_command(command, team):
             response = "Position in queue moved forward by one person"
         else:
             response = "Queue position can\'t be moved"
-
     
     if command.startswith('decrease'):
         if team.current > 0:
@@ -130,10 +129,8 @@ def handle_command(command, team):
         else:
             response = "Queue position can\'t be moved"
 
-
     if command.startswith('current'):
         response = "Queue position is currently *{}*.".format(team.current)
-
 
     if command.startswith('add'):
         mention = command.split()[1]
