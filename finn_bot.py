@@ -37,6 +37,7 @@ RTM_READ_DELAY = 1
 MENTION_REGEX = "^<@(|[WU].+?)>(.*)"
 
 
+# Creates a team in the database
 def create_team(channel):
     team = Team(channel=channel, users='', current=0)
     session.add(Team(channel=channel, users='', current=0))
@@ -44,6 +45,7 @@ def create_team(channel):
     return team
 
 
+# Retrieves the team from the database from the channel name
 def get_team(channel):
     team = session.query(Team).filter_by(channel=channel).first()
     return team
@@ -66,6 +68,7 @@ def evaluate_team(channel):
     return team, channel, counter, users
 
 
+# Processes the message
 def parse_bot_commands(slack_events):
     for event in slack_events:
         if event["type"] == "message" and not "subtype" in event:
@@ -154,6 +157,12 @@ def handle_command(command, team):
 
         if team.current >= len(users):
             team.current -= 1
+    
+    if command.startswith('last'):
+        if len(users) > 0:
+            response = users[team.current - 1]
+        else:
+            response = "There is no one assigned for taking tasks yet. Use the *add* command followed by a user mention."
 
     slack_client.api_call(
         "chat.postMessage",
