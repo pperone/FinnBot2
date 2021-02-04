@@ -14,6 +14,7 @@ from sqlalchemy.orm import sessionmaker
 engine = create_engine(os.environ['DATABASE_URL'])
 base = declarative_base()
 
+# Database models
 class Team(base):  
     __tablename__ = 'teams'
 
@@ -96,6 +97,7 @@ def handle_command(command, team):
     response = None
     users = team.users.split()
 
+    # Assign a task to a team member
     if command.startswith('assign'):
         if len(users) > 0:
             response = users[team.current]
@@ -106,12 +108,14 @@ def handle_command(command, team):
         else:
             response = "There is no one assigned for taking tasks yet. Use the *add* command followed by a user mention."
 
+    # Lists all members in a team
     if command.startswith('list'):
         if len(users) > 0:
             response = users
         else:
             response = "There is no one assigned for taking tasks yet. Use the *add* command followed by a user mention."
 
+    # Moves queue position up by one
     if command.startswith('increase'):
         if len(users) > team.current + 1:
             team.current += 1
@@ -121,7 +125,8 @@ def handle_command(command, team):
             response = "Position in queue moved forward by one person"
         else:
             response = "Queue position can\'t be moved"
-    
+
+    # Moves queue position up by one
     if command.startswith('decrease'):
         if team.current > 0:
             team.current -= 1
@@ -132,9 +137,11 @@ def handle_command(command, team):
         else:
             response = "Queue position can\'t be moved"
 
+    # Informs the current member
     if command.startswith('current'):
         response = "Queue position is currently *{}*.".format(team.current)
 
+    # Adds member to team
     if command.startswith('add'):
         mention = command.split()[1]
 
@@ -144,6 +151,7 @@ def handle_command(command, team):
         else:
             response = "Not a valid addition. Try tagging someone."
 
+    # Removes member from team
     if command.startswith('remove'):
         mention = command.split()[1]
 
@@ -157,7 +165,8 @@ def handle_command(command, team):
 
         if team.current >= len(users):
             team.current -= 1
-    
+
+    # Informs last member to take a task
     if command.startswith('last'):
         if len(users) > 0:
             response = users[team.current - 1]
